@@ -1,0 +1,215 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ANOMALÍAS: HOSPITAL</title>
+<style>
+*{box-sizing:border-box;margin:0}html,body{height:100%;overflow:hidden;background:#030405;color:#c5cfcc;font-family:"Courier New",monospace;user-select:none}
+#c{position:fixed;inset:0;width:100%;height:100%}.hide{display:none!important}
+.scr{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(10px,2vh,18px);text-align:center;padding:4vmin;
+background:radial-gradient(ellipse at center,#0b100fdd 0%,#020303f2 85%),linear-gradient(#ffffff06 1px,transparent 1px) 0 0/48px 48px,linear-gradient(90deg,#ffffff06 1px,transparent 1px) 0 0/48px 48px,#030405;z-index:5}
+h1{font:400 clamp(30px,8vw,92px) Georgia,serif;letter-spacing:.18em;color:#d8e0dc;text-shadow:0 0 18px #4a6b6355;animation:gl 7s infinite}
+h1 small{display:block;font-size:.32em;letter-spacing:.9em;color:#7e2a2a;margin-top:.4em}h2{font:400 clamp(24px,5vw,48px) Georgia,serif;letter-spacing:.2em}.red{color:#a32a2a}
+p{max-width:34em;line-height:1.7;font-size:clamp(13px,1.8vw,17px);color:#98a8a3}.k{color:#6f8c84}
+button{background:#0c1211cc;color:#c5cfcc;border:1px solid #3a4f4a;padding:.7em 2.4em;font:inherit;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;min-width:min(78vw,270px);transition:.2s}
+button:hover{border-color:#8a2a2a;color:#fff;background:#1a0f0f}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:3;text-shadow:0 0 6px #000}
+#obj{position:absolute;top:3vh;left:3vw;max-width:46vw;font-size:clamp(11px,1.5vw,15px);color:#9fb3ac;opacity:.85;letter-spacing:.06em}#obj:before{content:"OBJETIVO  ";color:#7e2a2a}
+#bars{position:absolute;left:3vw;bottom:4vh;display:flex;flex-direction:column;gap:8px;font-size:clamp(10px,1.3vw,13px);letter-spacing:.12em;opacity:.8}
+.bar{width:clamp(110px,16vw,200px)}.bar i{display:block;height:4px;background:#b9c7c2;box-shadow:0 0 6px #b9c7c255;transition:width .2s}.bar.low i{background:#a32a2a;animation:bl .6s infinite}#key{color:#c9a84c}
+#hint{position:absolute;left:50%;bottom:16vh;transform:translateX(-50%);padding:.4em 1.2em;background:#000a;border:1px solid #3a4f4a;font-size:clamp(12px,1.7vw,16px);letter-spacing:.1em}
+#msg{position:absolute;left:50%;top:14vh;transform:translateX(-50%);width:min(80vw,620px);text-align:center;font:italic clamp(14px,2vw,20px) Georgia,serif;color:#cfd8d4;line-height:1.5}
+#cross{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px;border-radius:50%;background:#fff6}
+#fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .6s;z-index:9;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8vh}#fade.on{opacity:1}
+#ld{font-size:clamp(11px,1.4vw,14px);letter-spacing:.4em;color:#6f8c84}
+#errT{color:#c9a8a8;word-break:break-word}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:8;background:radial-gradient(ellipse at center,transparent 55%,#000b 100%),repeating-linear-gradient(#0000 0 2px,#00000014 2px 3px);animation:fl 5s infinite}
+@keyframes gl{0%,93%,100%{transform:none}94%{transform:translateX(3px);opacity:.8}96%{transform:translateX(-2px)}}@keyframes fl{0%,100%{opacity:1}47%{opacity:.94}50%{opacity:.88}53%{opacity:.96}}@keyframes bl{50%{opacity:.3}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script></head><body>
+<canvas id="c"></canvas>
+<div id="hud" class="hide"><div id="obj"></div>
+<div id="bars"><div id="bat" class="bar"><i></i><span>LINTERNA [F]</span></div><div id="ext" class="bar hide"><i></i><span>EXTINTOR [CLIC]</span></div><div id="key" class="hide">LLAVE OBTENIDA</div></div>
+<div id="hint" class="hide"></div><div id="msg" class="hide"></div><div id="cross"></div></div>
+<div id="menu" class="scr"><h1>ANOMALÍAS<small>HOSPITAL</small></h1><button id="play">Jugar</button><button id="help">Instrucciones</button></div>
+<div id="info" class="scr hide"><h2>Instrucciones</h2><p>Sam recorre de noche un hospital abandonado. Algo la sigue.<br>La Anomalía se acerca cuando no la iluminas. Si te toca, pierdes.</p>
+<p class="k">WASD moverse · Mouse mirar · E interactuar<br>F linterna · Clic izquierdo extintor · ESC pausa</p><button id="back">Volver</button></div>
+<div id="pause" class="scr hide"><h2>Pausa</h2><button id="resume">Continuar</button><button id="restart">Reiniciar nivel</button><button id="tomenu">Menú principal</button></div>
+<div id="dead" class="scr hide"><h2 class="red">No escapaste</h2><button id="retry">Reintentar nivel</button><button id="tomenu2">Menú principal</button></div>
+<div id="win" class="scr hide"><h2>Amanece</h2><p>Sam abandona el hospital. Esta vez no deja nada atrás.</p><button id="tomenu3">Menú principal</button></div>
+<div id="err" class="scr hide"><h2 class="red">Error de carga</h2><p id="errT"></p><button id="retry2">Reintentar</button><button id="tomenu4">Menú principal</button></div>
+<div id="fade"><span id="ld">CARGANDO…</span></div><div id="fx"></div>
+<script type="module">
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {Reflector} from 'three/addons/objects/Reflector.js';
+
+/* ======================= CONFIGURACIÓN ======================= */
+// Unidades en metros; yaw 0 mira hacia -Z, PI/2 hacia -X, -PI/2 hacia +X.
+// Rutas EXACTAS de los modelos (carpeta "modelos" junto a index.html). Respetan mayúsculas y espacios.
+const ASSETS={nivel1:'./modelos/NIVEL 1.glb',nivel2:'./modelos/NIVEL 2.glb',nivel3:'./modelos/NIVEL 3.glb',
+ ana:'./modelos/Antagonista.glb',key:'./modelos/tarjeta.glb',ext:'./modelos/extintor.glb',lin:'./modelos/Linterna.glb'};
+const G={eye:1.6,speed:3,radius:0.35,flash:{intensity:70,drain:0.5},extUse:18,
+ en:{speed:2.3,lit:0.7,kill:0.9,stun:3.5,push:2.5,scale:[1,1.35,1]},
+ // Los escenarios GLB están modelados en unidades de Blender ≈ 2.5 cm (pasillo del nivel 1 ≈ 820 unidades).
+ // ×0.025 los lleva a metros y hace coincidir todas las posiciones de los niveles con la geometría real.
+ levelScale:0.025,
+ // Tamaño final (m) al que se ajusta cada modelo suelto, porque cada GLB viene en una escala distinta.
+ fit:{ana:1.85,key:0.3,ext:0.5,linVM:0.22,extVM:0.3}};
+// items: interacciones (E). node: usa un objeto que ya está dentro del escenario. model: carga un GLB suelto.
+// triggers: zonas automáticas. needs/set: banderas ('key' y 'ext' pasan de nivel).
+// do: acciones (flicker, ghost, mirror, chase, freeze, front, lights, door, vanish, next).
+const LEVELS=[
+{model:'nivel1',title:'NIVEL 1 — EXPLORACIÓN',floorY:0.1,spawn:{p:[16.5,0,-1.1],yaw:Math.PI/2},ambient:0.35,fog:0.1,
+ objectives:[{t:'Recorre el hospital',u:'seen'},{t:'La puerta principal está bloqueada. Busca otra salida',u:'__'}],
+ mirror:{p:[12,1.7,-3.55],ry:0,size:[1.8,2.4]},ghost:[3.2,0,0.5],
+ triggers:[{p:[12,-1.5],r:3,do:['mirror'],msg:'Tu reflejo no se mueve.'},{p:[7.5,0],r:2.5,do:['ghost'],set:'seen'}],
+ items:[{id:'blk',p:[0.6,0,1.5],r:2,label:'Puerta de acceso',msg:'Bloqueada. Debe haber otra salida.',once:false},
+        {id:'ex',p:[8.4,0,3.0],r:1.8,label:'Salir por la puerta lateral',needs:['seen'],fail:'Aún no. Recorre el pasillo.',do:['next'],once:false}]},
+{model:'nivel2',title:'NIVEL 2 — LA LLAVE',floorY:0,spawn:{p:[-5.8,0,1.8],yaw:-Math.PI/2},ambient:0.3,fog:0.1,ext:true,enemySpeed:2.3,chaseBack:6,
+ objectives:[{t:'Encuentra la llave del archivo',u:'key'},{t:'Escapa por el fondo del pasillo. Ilumínala o usa el extintor',u:'__'}],
+ items:[{id:'ext',p:[-2.1,0,3.1],r:1.8,label:'Tomar el extintor',node:'Extintor',model:'ext',set:'ext',msg:'Extintor equipado. Clic izquierdo para usarlo.'},
+        {id:'key',p:[5,1,-2.6],r:1.8,label:'Tomar la llave',model:'key',set:'key',do:['chase'],msg:'Algo se mueve detrás de ti.'},
+        {id:'ex',p:[8,0,0],r:2.2,label:'Salida de emergencia',needs:['key'],fail:'Necesitas la llave del archivo.',do:['next'],once:false}]},
+{model:'nivel3',title:'NIVEL 3 — EL ARCHIVO',floorY:0,spawn:{p:[0,0,2.5],yaw:Math.PI/2},ambient:0.3,fog:0.1,litAmbient:1.1,litFog:0.02,enemySpeed:1.1,chaseBack:5,
+ mirror:{p:[0,1.7,-3.8],ry:0,size:[1.8,2.4]},
+ objectives:[{t:'Abre el archivo con la llave',u:'open'},{t:'Encuentra el expediente',u:'file'},{t:'Enciende el generador',u:'gen'},{t:'Pídele perdón',u:'__'}],
+ items:[{id:'kd',p:[-3.3,0,3],r:2,label:'Usar la llave en el archivo',needs:['key'],fail:'Necesitas la llave.',set:'open',do:['door'],msg:'La puerta del archivo se abre.'},
+        {id:'file',p:[-1.2,0.9,-3.2],r:1.6,proc:'file',label:'Leer el expediente',needs:['open'],fail:'Primero abre el archivo.',set:'file',do:['chase'],ms:8000,msg:'Expediente: SAM. Noche de la evacuación. Alguien se quedó atrás. Eras tú.'},
+        {id:'gen',p:[3,0,-3.2],r:1.8,proc:'gen',label:'Encender el generador',needs:['file'],fail:'Primero revisa los expedientes.',set:'gen',do:['lights','freeze','front'],msg:'Vuelve la luz.'},
+        {id:'fg',p:[0,0,0],r:2.4,label:'Pedirle perdón',needs:['gen'],do:['vanish'],msg:'Perdóname.'}]}];
+
+/* ======================= INTERFAZ ======================= */
+const ui=(()=>{const $=id=>document.getElementById(id);let mt,lo='';return{
+ screen(id){document.querySelectorAll('.scr').forEach(e=>e.classList.add('hide'));if(id)$(id).classList.remove('hide');$('hud').classList.toggle('hide',!!id);},
+ fade(on){$('fade').classList.toggle('on',on);},
+ obj(t){if(t!==lo){lo=t;$('obj').textContent=t;}},
+ hint(t){const h=$('hint');if(h.textContent!==t)h.textContent=t;h.classList.toggle('hide',!t);},
+ msg(t,ms=4000){const m=$('msg');m.textContent=t;m.classList.remove('hide');clearTimeout(mt);mt=setTimeout(()=>m.classList.add('hide'),ms);},
+ bars(b,e,showE,key){$('bat').firstElementChild.style.width=b+'%';$('bat').classList.toggle('low',b<20);$('ext').classList.toggle('hide',!showE);$('ext').firstElementChild.style.width=e+'%';$('key').classList.toggle('hide',!key);}};})();
+
+/* ======================= MOTOR ======================= */
+const $=id=>document.getElementById(id),wait=ms=>new Promise(r=>setTimeout(r,ms)),PERSIST=['key','ext'];
+const renderer=new THREE.WebGLRenderer({canvas:$('c'),antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(72,1,0.05,60);cam.rotation.order='YXZ';scene.add(cam);
+const flash=new THREE.SpotLight(0xfff0d0,G.flash.intensity,22,0.5,0.5,1.4);flash.target.position.set(0,0,-3);cam.add(flash,flash.target);
+const puff=new THREE.Mesh(new THREE.SphereGeometry(1.2,12,8),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.3,depthWrite:false}));puff.position.set(0,-.2,-2.6);puff.visible=false;cam.add(puff);
+const hand=new THREE.PointLight(0xfff0d0,0.5,0.9,2);hand.position.set(0,-.1,-.3);cam.add(hand); // luz mínima para que se vean la linterna y el extintor en la mano
+const resize=()=>{renderer.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();};addEventListener('resize',resize);resize();
+const loader=new GLTFLoader(),cache={};
+const get=async k=>{if(!cache[k])cache[k]=loader.loadAsync(ASSETS[k]).then(g=>g.scene).catch(e=>{delete cache[k];throw new Error('No se pudo cargar "'+ASSETS[k]+'". '+(e&&e.message?e.message:''));});return (await cache[k]).clone(true);};
+// Ajusta un modelo a un tamaño en metros: lo centra (base en y=0 o centro en 0) sin tocar el GLB original.
+function fit(obj,size,{by='max',base='bottom',rot=null}={}){const mid=new THREE.Group(),out=new THREE.Group();if(rot)obj.rotation.set(...rot);mid.add(obj);mid.updateMatrixWorld(true);
+ const b=new THREE.Box3().setFromObject(obj),s=b.getSize(new THREE.Vector3()),c=b.getCenter(new THREE.Vector3()),d=by==='y'?s.y:Math.max(s.x,s.y,s.z);
+ mid.position.set(-c.x,base==='bottom'?-b.min.y:-c.y,-c.z);out.add(mid);out.scale.setScalar(d>0?size/d:1);return out;}
+const S={mode:'menu',lv:0,carry:{},snap:{},f:{},pos:new THREE.Vector3(),yaw:0,pitch:0,keys:{},mouse:false,bat:100,ext:100,fl:true,flick:0,t:0,cut:null,paused:false,col:[],I:[],T:[]};
+const has=n=>S.carry[n]||S.f[n],setF=n=>{(PERSIST.includes(n)?S.carry:S.f)[n]=true;};
+const fwd=()=>new THREE.Vector3(-Math.sin(S.yaw),0,-Math.cos(S.yaw));
+const lock=()=>{try{const r=$('c').requestPointerLock();if(r&&r.catch)r.catch(()=>{});}catch(e){}};
+const ray=new THREE.Raycaster(),dirs=[...Array(8)].map((_,i)=>new THREE.Vector3(Math.cos(i*Math.PI/4),0,Math.sin(i*Math.PI/4)));
+function collide(){for(const d of dirs)for(const h of [0.5,1.3]){ray.set(new THREE.Vector3(S.pos.x,S.pos.y+h,S.pos.z),d);ray.far=G.radius;const hit=ray.intersectObjects(S.col,false)[0];if(hit)S.pos.addScaledVector(d,-(G.radius-hit.distance));}}
+const sinColision=d=>{S.col=S.col.filter(o=>{for(let p=o;p;p=p.parent)if(p===d)return false;return true;});};
+
+/* Linterna y extintor en la mano (primera persona). La protagonista no tiene modelo: es la cámara. */
+const vm={lin:null,ext:null};
+(async()=>{try{const l=fit(await get('lin'),G.fit.linVM,{base:'center'});l.rotation.set(0.05,Math.PI/2+0.15,0);l.position.set(.2,-.21,-.45);l.visible=false;cam.add(l);vm.lin=l;}catch(e){console.warn(e.message);}
+ try{const x=fit(await get('ext'),G.fit.extVM,{base:'center'});x.rotation.set(0,0.4,0.08);x.position.set(-.26,-.3,-.5);x.visible=false;cam.add(x);vm.ext=x;}catch(e){console.warn(e.message);}})();
+const verMano=(l,x)=>{if(vm.lin)vm.lin.visible=l;if(vm.ext)vm.ext.visible=x;};
+
+const ACT={
+ flicker(){S.flick=2.2;},
+ ghost(){const e=S.en,g=S.C.ghost;S.flick=2.6;e.state='ghost';e.t=2.6;e.m.position.set(g[0],S.C.floorY,g[2]);e.m.visible=true;e.m.lookAt(S.pos.x,S.C.floorY,S.pos.z);},
+ mirror(){startCut({ghost:true});},
+ chase(){const e=S.en,f=fwd(),b=S.C.chaseBack||6;e.state='chase';e.speed=S.C.enemySpeed||G.en.speed;e.m.position.set(S.pos.x-f.x*b,S.C.floorY,S.pos.z-f.z*b);e.m.visible=true;},
+ freeze(){S.en.state='frozen';},
+ front(){const e=S.en,f=fwd(),o=new THREE.Vector3(S.pos.x,S.C.floorY+1,S.pos.z),up=new THREE.Vector3(0,1,0);let dir=f,lib=-1; // aparece al frente; si hay pared, en la dirección libre más cercana a la mirada
+  for(const a of [0,.5,-.5,1,-1,1.6,-1.6,2.4,-2.4,Math.PI]){const d=f.clone().applyAxisAngle(up,a);ray.set(o,d);ray.far=3;const h=ray.intersectObjects(S.col,false)[0],l=h?h.distance:3;if(l>lib){lib=l;dir=d;}if(l>=2.7)break;}
+  const k=Math.max(1.2,Math.min(2.2,lib-0.5));e.m.position.set(S.pos.x+dir.x*k,S.C.floorY,S.pos.z+dir.z*k);e.m.visible=true;e.m.lookAt(S.pos.x,S.C.floorY,S.pos.z);const fg=S.I.find(i=>i.id==='fg');if(fg)fg.p=[e.m.position.x,0,e.m.position.z];},
+ lights(){S.amb.intensity=S.C.litAmbient;scene.fog.density=S.C.litFog;S.I.forEach(i=>{if(i.proc==='gen'&&i.obj)i.obj.material.emissive.set(0x55ff88);});},
+ door(){const d=S.door;if(!d)return;d.visible=false;sinColision(d);},
+ vanish(){S.en.state='fade';S.en.t=2.8;},
+ next(){nextLevel();}};
+const run=l=>(l||[]).forEach(a=>ACT[a]&&ACT[a]());
+function doItem(it){
+ if(it.needs&&!it.needs.every(has)){ui.msg(it.fail||'Todavía no.');return;}
+ if(it.set)setF(it.set);if(it.msg)ui.msg(it.msg,it.ms||5000);
+ if(it.once!==false){it.done=true;if(it.obj){it.obj.visible=false;if(it.inScene)sinColision(it.obj);}}run(it.do);}
+// Escena del espejo en primera persona: la cámara queda frente al espejo; la Anomalía aparece detrás, solo en el reflejo.
+function startCut(o){const C=S.C,m=C.mirror,n=new THREE.Vector3(Math.sin(m.ry),0,Math.cos(m.ry)),mp=new THREE.Vector3(m.p[0],0,m.p[2]);
+ S.cut={t:0,dur:o.dur||7,end:o.end,n,mp,ghost:o.ghost};verMano(false,false);
+ if(o.ghost){const e=S.en;ray.set(new THREE.Vector3(mp.x,C.floorY+1.2,mp.z).addScaledVector(n,0.05),n);ray.far=7.5;const h=ray.intersectObjects(S.col,false)[0];
+  const dist=Math.max(3.4,Math.min(7.5,h?h.distance-0.6:7.5)); // no la coloca detrás de una pared
+  e.state='cut';e.m.visible=true;e.m.position.copy(mp).addScaledVector(n,dist).setY(C.floorY);e.m.rotation.set(0,Math.atan2(-n.x,-n.z),0);}ui.hint('');}
+function endCut(){const c=S.cut;S.cut=null;if(c.ghost){S.en.m.visible=false;S.en.state='off';}if(c.end==='win')win();}
+function lose(){S.mode='dead';document.exitPointerLock();ui.screen('dead');}
+function win(){S.mode='end';document.exitPointerLock();ui.screen('win');}
+function toMenu(){S.mode='menu';if(S.root){scene.remove(S.root);S.root=null;}document.exitPointerLock();ui.fade(false);ui.screen('menu');}
+function errorCarga(e){S.mode='error';console.error(e);document.exitPointerLock();ui.fade(false);
+ let t=(e&&e.message)||String(e);if(location.protocol==='file:')t+=' El juego está abierto con doble clic (file://): los modelos solo cargan desde GitHub Pages o un servidor local.';
+ else t+=' Revisa que el archivo exista en la carpeta "modelos" con ese nombre exacto (mayúsculas, espacios y extensión .glb).';
+ $('errT').textContent=t;ui.screen('err');}
+const nextLevel=()=>S.lv+1<LEVELS.length?startLevel(S.lv+1):win();
+async function startLevel(i,restart){try{
+ S.mode='load';ui.fade(true);await wait(600);
+ if(S.root){scene.remove(S.root);S.root=null;}
+ if(restart)S.carry={...S.snap};else S.snap={...S.carry};
+ const C=LEVELS[i];S.lv=i;S.C=C;S.f={};S.cut=null;S.flick=0;S.bat=100;S.ext=100;S.fl=true;
+ const root=new THREE.Group();
+ const lvl=await get(C.model);lvl.scale.setScalar(C.scale??G.levelScale);root.add(lvl);
+ S.amb=new THREE.AmbientLight(0x9fb4bc,C.ambient);root.add(S.amb);
+ scene.fog=new THREE.FogExp2(0x030405,C.fog);scene.background=new THREE.Color(0x030405);root.updateMatrixWorld(true);
+ S.col=[];S.door=null;
+ root.traverse(o=>{if(/puerta.?acceso/i.test(o.name)&&!S.door)S.door=o;if(o.isMesh&&!/techo|sangre|cf6b|vecteezy|imagen|señal|letrero|lamp|sconce/i.test(o.name)){const b=new THREE.Box3().setFromObject(o);if(b.max.y-b.min.y>0.3)S.col.push(o);}});
+ if(C.mirror){const m=C.mirror,r=new Reflector(new THREE.PlaneGeometry(...m.size),{textureWidth:512,textureHeight:512,color:0x99aaaa,clipBias:0.003});r.position.set(...m.p);r.rotation.y=m.ry;root.add(r);}
+ S.I=C.items.map(o=>({...o,done:false}));S.T=(C.triggers||[]).map(o=>({...o,done:false}));
+ for(const it of S.I){let ob=null;
+  if(it.node){ob=lvl.getObjectByName(it.node)||null;if(ob)it.inScene=true;else console.warn('No está "'+it.node+'" en '+ASSETS[C.model]+': se usa el modelo suelto.');}
+  if(!ob&&it.model)ob=it.model==='key'?fit(await get('key'),G.fit.key*(it.s||1),{rot:[Math.PI/2,0,0],base:'center'}):fit(await get(it.model),G.fit[it.model]*(it.s||1));
+  else if(!ob&&it.proc==='file')ob=new THREE.Mesh(new THREE.BoxGeometry(.35,.04,.25),new THREE.MeshStandardMaterial({color:0xd9ccaa,emissive:0x2a2418}));
+  else if(!ob&&it.proc==='gen')ob=new THREE.Mesh(new THREE.BoxGeometry(.9,1.2,.6),new THREE.MeshStandardMaterial({color:0x555a5c,metalness:.6,roughness:.5}));
+  if(ob&&!it.inScene){ob.position.set(it.p[0],it.proc==='gen'?C.floorY+.6:(it.p[1]||C.floorY),it.p[2]);root.add(ob);}
+  if(ob){it.obj=ob;it.y0=ob.position.y;}}
+ const en=new THREE.Group();en.add(fit(await get('ana'),G.fit.ana/G.en.scale[1],{by:'y'}));en.scale.set(...G.en.scale);en.visible=false;root.add(en);S.en={m:en,state:'off',t:0,stun:0,speed:G.en.speed};
+ S.root=root;scene.add(root);
+ S.pos.set(C.spawn.p[0],C.floorY,C.spawn.p[2]);S.yaw=C.spawn.yaw;S.pitch=0;
+ S.mode='play';S.paused=false;ui.screen(null);ui.fade(false);ui.msg(C.title,3500);lock();
+}catch(e){errorCarga(e);}}
+function update(dt){
+ S.t+=dt;const C=S.C;
+ if(S.cut){const c=S.cut;c.t+=dt;cam.position.set(c.mp.x+c.n.x*2.2,C.floorY+G.eye,c.mp.z+c.n.z*2.2);cam.lookAt(c.mp.x,C.floorY+G.eye-0.1,c.mp.z);
+  flash.visible=false;verMano(false,false);if(c.t>=c.dur)endCut();return;}
+ const f=fwd(),r=new THREE.Vector3(-f.z,0,f.x),mv=new THREE.Vector3();
+ if(S.keys.KeyW)mv.add(f);if(S.keys.KeyS)mv.sub(f);if(S.keys.KeyD)mv.add(r);if(S.keys.KeyA)mv.sub(r);
+ if(mv.lengthSq()){mv.normalize().multiplyScalar(G.speed*dt);S.pos.add(mv);collide();}
+ cam.position.set(S.pos.x,S.pos.y+G.eye+(mv.lengthSq()?Math.sin(S.t*9)*0.025:0),S.pos.z);cam.rotation.set(S.pitch,S.yaw,0);
+ if(S.fl)S.bat=Math.max(0,S.bat-G.flash.drain*dt);
+ if(S.flick>0)S.flick-=dt;
+ flash.visible=S.fl&&S.bat>0&&(S.flick<=0||Math.floor(S.t*14)%3===0);
+ const sp=S.mouse&&has('ext')&&C.ext&&S.ext>0;puff.visible=!!sp;if(sp)S.ext=Math.max(0,S.ext-G.extUse*dt);
+ verMano(true,!!(C.ext&&has('ext')));
+ const e=S.en,ep=e.m.position,dx=ep.x-S.pos.x,dz=ep.z-S.pos.z,d=Math.hypot(dx,dz);
+ if(e.state==='ghost'){e.t-=dt;if(e.t<=0){e.m.visible=false;e.state='off';}}
+ else if(e.state==='fade'){e.t-=dt;e.m.scale.set(G.en.scale[0]*Math.max(e.t,0)/2.8,G.en.scale[1],G.en.scale[2]*Math.max(e.t,0)/2.8);if(e.t<=0){e.m.visible=false;e.state='off';startCut({end:'win',dur:6});}}
+ else if(e.state==='chase'){
+  const to=new THREE.Vector3(-dx,0,-dz).normalize(),lit=flash.visible&&d<14&&to.dot(f)<-0.9;
+  if(sp&&d<7&&to.dot(f)<-0.8){e.stun=G.en.stun;ep.x+=dx/d*G.en.push*dt;ep.z+=dz/d*G.en.push*dt;}
+  e.stun-=dt;const v=e.stun>0?0:(lit?G.en.lit:e.speed);ep.x+=to.x*v*dt;ep.z+=to.z*v*dt;e.m.lookAt(S.pos.x,C.floorY,S.pos.z);
+  if(d<G.en.kill){lose();return;}}
+ let near=null,best=1e9;for(const it of S.I){if(it.done)continue;const q=Math.hypot(S.pos.x-it.p[0],S.pos.z-it.p[2]);if(q<it.r&&q<best){best=q;near=it;}
+  if(it.obj&&!it.inScene&&it.model==='key'){it.obj.rotation.y+=dt*1.5;it.obj.position.y=it.y0+Math.sin(S.t*2)*0.05;}}
+ S.near=near;ui.hint(!document.pointerLockElement?'Haz clic para controlar la cámara':near?'[E]  '+near.label:'');
+ for(const t of S.T){if(!t.done&&Math.hypot(S.pos.x-t.p[0],S.pos.z-t.p[1])<t.r){t.done=true;if(t.set)setF(t.set);if(t.msg)ui.msg(t.msg,4000);run(t.do);}}
+ ui.obj((C.objectives.find(o=>!has(o.u))||C.objectives.at(-1)).t);ui.bars(S.bat,S.ext,C.ext&&has('ext'),has('key'));}
+function tick(){requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),0.05);if(S.mode==='play'&&!S.paused)update(dt);renderer.render(scene,cam);}
+const clock=new THREE.Clock();
+addEventListener('keydown',e=>{S.keys[e.code]=true;if(S.mode!=='play'||S.paused||S.cut||e.repeat)return;if(e.code==='KeyE'&&S.near)doItem(S.near);if(e.code==='KeyF')S.fl=!S.fl;});
+addEventListener('keyup',e=>{S.keys[e.code]=false;});
+addEventListener('blur',()=>{S.keys={};S.mouse=false;});
+addEventListener('mousedown',e=>{if(e.button!==0||S.mode!=='play'||S.paused)return;if(!document.pointerLockElement)lock();else S.mouse=true;});
+addEventListener('mouseup',()=>{S.mouse=false;});
+addEventListener('mousemove',e=>{if(!document.pointerLockElement||S.mode!=='play'||S.paused||S.cut)return;S.yaw-=e.movementX*0.0022;S.pitch=Math.max(-1.4,Math.min(1.4,S.pitch-e.movementY*0.0022));});
+document.addEventListener('pointerlockchange',()=>{if(!document.pointerLockElement&&S.mode==='play'&&!S.paused){S.paused=true;S.mouse=false;ui.screen('pause');}});
+const on=(id,fn)=>$(id).addEventListener('click',fn);
+on('play',()=>{S.carry={};S.snap={};startLevel(0);});on('help',()=>ui.screen('info'));on('back',()=>ui.screen('menu'));
+on('resume',()=>{S.paused=false;ui.screen(null);lock();});on('restart',()=>startLevel(S.lv,true));on('retry',()=>startLevel(S.lv,true));on('retry2',()=>startLevel(S.lv,true));
+['tomenu','tomenu2','tomenu3','tomenu4'].forEach(i=>on(i,toMenu));
+window.__juego={S,startLevel,doItem,cam,scene,THREE}; // acceso de depuración desde la consola (F12)
+ui.screen('menu');tick();
+</script></body></html>
